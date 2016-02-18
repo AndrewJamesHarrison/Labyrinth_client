@@ -18,7 +18,7 @@ var speed=1;
 var socket;
 var player;
 
-var enemies=[];
+//var enemies=[];
 var drawEnemies=[];
 
 var cursors;
@@ -54,6 +54,9 @@ function create(){
 	player.body.collideWorldBounds = true;
 	
 	//base_layer.debug = true;
+	
+	var enemy=game.add.sprite(24, 24, 'enemy');
+	enemy.kill();
 	
 	wall_up_layer = maze.createBlankLayer('wall_up_layer', maze_w, maze_h, maze_px, maze_px);
     wall_down_layer = maze.createBlankLayer('wall_down_layer', maze_w, maze_h, maze_px, maze_px);
@@ -143,55 +146,63 @@ function onSocketConnected () {
 
 // Socket disconnected
 function onSocketDisconnect () {
-  console.log('Disconnected from socket server');
+	console.log('Disconnected from socket server');
 }
 
 // New player
 function onNewPlayer (data) {
-  console.log('New player connected:', data.id);
-  var newPlayer = new Player(data.x, data.y);
-  newPlayer.id = data.id;
-  enemies.push(newPlayer);
-  drawEnemies.push(game.add.sprite(data.x, data.y, 'enemy'));
-  drawEnemies[drawEnemies.length-1].anchor.setTo(0.5, 0.5);
+	console.log('New player connected:', data.id);
+	//var newPlayer = new Player(data.x, data.y);
+	//newPlayer.id = data.id;
+	//enemies.push(newPlayer);
+	var enemy;
+	enemy= game.add.sprite(data.x, data.y, 'enemy');
+	enemy.id=data.id;
+	
+	drawEnemies.push(enemy);
+	drawEnemies[drawEnemies.length-1].id=data.id;
+	console.log('Draw ID:'+drawEnemies[drawEnemies.length-1].id);
+	drawEnemies[drawEnemies.length-1].anchor.setTo(0.5, 0.5);
 }
 
 function onMovePlayer (data) {
-  var movePlayer=-1;
-  movePlayer = playerById(data.id);
+	var movePlayer=-1;
+	movePlayer = playerById(data.id);
 
-  // Player not found
-  if (movePlayer==-1) {
-    console.log('Player not found: ', data.id);
-    return;
-  }
+	// Player not found
+	if (movePlayer==-1) {
+		console.log('Player not found: ', data.id);
+		return;
+	}
 
   // Update player position
-  drawEnemies[movePlayer].x = data.x;
-  drawEnemies[movePlayer].y = data.y;
+	drawEnemies[movePlayer].x = data.x;
+	drawEnemies[movePlayer].y = data.y;
 }
 
 // Remove player
 function onRemovePlayer (data) {
-  var removePlayer = playerById(data.id);
+	var removePlayer=-1;
+	console.log('Remove: '+data.id);
+	removePlayer = playerById(data.id);
+	// Player not found
+	if (removePlayer==-1) {
+		console.log('Removal: Player not found: ', data.id);
+		return;
+	}
 
-  // Player not found
-  if (!removePlayer) {
-    console.log('Removal: Player not found: ', data.id);
-    return;
-  }
-
-  // Remove player from array
-  enemies.splice(removePlayer, 1);
-  drawEnemies[removePlayer].sprite.destroy(true);
-  drawEnemies.splice(removePlayer, 1);
+	// Remove player from array
+	//enemies.splice(removePlayer, 1);
+	drawEnemies[removePlayer].destroy();
+	drawEnemies.splice(removePlayer, 1);
+	//enemy.destroy();
 }
 
 function update() {
 
 	game.physics.arcade.collide(player, base_layer);
 
-  player.body.velocity.set(0);
+	player.body.velocity.set(0);
 
     if (cursors.left.isDown)
     {
@@ -226,11 +237,11 @@ function playerById (id) {
 	var c=false;
 	do{
 	//console.log('ID: '+enemies[i].id);
-		if (enemies[i].id == id) {
+		if (drawEnemies[i].id == id) {
 			c=true;
 		}else{
 			i++;
 		}
-    }while(i<enemies.length&&c==false);
+    }while(i<drawEnemies.length&&c==false);
 	return i;
 }
