@@ -13,7 +13,7 @@ var maze_h=51;
 var maze_w=51;
 var maze_px=16;
 
-var speed=1;
+var speed=1000;
 
 var socket;
 var player;
@@ -22,6 +22,11 @@ var player;
 var drawEnemies=[];
 
 var cursors;
+
+var startx=24;
+var starty=24;
+var finx=784;
+var finy=784;
 
 var upKey;
 var downKey;
@@ -55,9 +60,6 @@ function create(){
 	
 	//base_layer.debug = true;
 	
-	var enemy=game.add.sprite(24, 24, 'enemy');
-	enemy.kill();
-	
 	wall_up_layer = maze.createBlankLayer('wall_up_layer', maze_w, maze_h, maze_px, maze_px);
     wall_down_layer = maze.createBlankLayer('wall_down_layer', maze_w, maze_h, maze_px, maze_px);
     wall_left_layer = maze.createBlankLayer('wall_left_layer', maze_w, maze_h, maze_px, maze_px);
@@ -90,7 +92,9 @@ var setEventHandlers = function () {
 }
 
 function onGameStart(data){
+	
 	maze_grid=data;
+	clearMaze();
 	//console.log('Maze data= '+maze_grid.cells);
 	drawMaze();
 	maze.setCollision(1, true, base_layer);
@@ -135,6 +139,18 @@ function drawMaze(){
             }
         }
     }
+}
+
+function clearMaze(){
+	for(var i=0;i<maze_grid.height;i++){
+        for(var j=0;j<maze_grid.width;j++){
+			maze.putTile(null, j, i, base_layer);
+			maze.putTile(null, j, i, wall_up_layer);
+			maze.putTile(null, j, i, wall_down_layer);
+			maze.putTile(null, j, i, wall_left_layer);
+			maze.putTile(null, j, i, wall_right_layer);
+		}
+	}
 }
 
 // Socket connected
@@ -199,37 +215,43 @@ function onRemovePlayer (data) {
 }
 
 function update() {
-
+	console.log('X: '+player.x+'Y: '+player.y);
 	game.physics.arcade.collide(player, base_layer);
 
 	player.body.velocity.set(0);
 
     if (cursors.left.isDown)
     {
-        player.body.velocity.x = -100;
+        player.body.velocity.x = ((-1)*speed);
         player.play('left');
     }
     else if (cursors.right.isDown)
     {
-        player.body.velocity.x = 100;
+        player.body.velocity.x = speed;
         player.play('right');
     }
     else if (cursors.up.isDown)
     {
-        player.body.velocity.y = -100;
+        player.body.velocity.y = ((-1)*speed);
         player.play('up');
     }
     else if (cursors.down.isDown)
     {
-        player.body.velocity.y = 100;
+        player.body.velocity.y = speed;
         player.play('down');
     }
 
-  socket.emit('move player', { x: player.x, y: player.y })
+	socket.emit('move player', { x: player.x, y: player.y })
+  
+	if(player.x>=finx&&player.y>=finy){
+		//Win game
+		socket.emit('player wins', {data: player.id});
+	}
 }
 
 function render(){
 	//game.debug.body(player);
+	//game.debug.text('X: '+player.x+'Y: '+player.y, 100, 900, 'ffffff');
 }
 
 function playerById (id) {
